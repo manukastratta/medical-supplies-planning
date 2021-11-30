@@ -45,7 +45,7 @@ ax_vaccine.legend(loc='best', frameon=True)
 
 # Save hospital past order data, 1 file per hospital
 for i in range(0, NUM_HOSPITALS):
-  np.savetxt(f'hospital{i+1}Data.txt', blood_distrs[i])
+  np.savetxt(f'hospitalData/hospital{i+1}Data.txt', blood_distrs[i])
 
 # creates 5 chunks-worth of data
 # for i in range(5):
