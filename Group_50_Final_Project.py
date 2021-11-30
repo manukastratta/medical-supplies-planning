@@ -1,16 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[6]:
-
-
-from google.colab import drive
-drive.mount('/content/drive')
-
-
-# In[ ]:
-
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,16 +7,9 @@ import random
 
 # # Generate true distributions of weekly hospital orders
 
-# In[ ]:
-
-
 NUM_HOSPITALS = 10
 N_SAMPLES = 1000
 random.seed(50)
-
-
-# In[ ]:
-
 
 # https://towardsdatascience.com/exploring-normal-distribution-with-jupyter-notebook-3645ec2d83f8
 
@@ -60,16 +40,6 @@ ax_blood.legend(loc='best', frameon=True)
 ax_vaccine.set_title('True Distribution of Vaccine Supply Orders')
 ax_vaccine.legend(loc='best', frameon=True)
 
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
 # creates 5 chunks-worth of data
 # simply takes chunks of 200 entries from our normal distribution
 # to view files, click on the left pane and click on the "Folder" icon at the bottom
@@ -82,19 +52,12 @@ for i in range(5):
 # with open('/content/drive/My Drive/test.txt', 'w') as f:
 #   f.write(np.array2string(blood_distrs[0][:200], separator='\n'))
 
-
-# In[ ]:
-
-
 # built-in function that allows us to find mean given a list of numbers
 # (if we don't go with the Beta/ Dirichlet distribution)
 mean, std = norm.fit(blood_distrs[0][200:400])
 
 
 # Generate grid, hospital locations, and dataset: 
-
-# In[ ]:
-
 
 MAX_DIM = 10
 possible_points = [] 
