@@ -9,7 +9,7 @@ import random
 
 NUM_HOSPITALS = 10
 N_SAMPLES = 30
-random.seed(45)
+random.seed(50)
 
 # https://towardsdatascience.com/exploring-normal-distribution-with-jupyter-notebook-3645ec2d83f8
 
