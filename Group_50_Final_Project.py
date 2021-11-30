@@ -87,4 +87,4 @@ for curr_state in range(0, NUM_HOSPITALS + 1):
     dataset.append([curr_state, action, curr_reward, next_state])
 
 print(dataset)
-
+np.savetxt("preliminary_dataset.csv", dataset, fmt = '%1d %1d %3f %1d', delimiter = ',')
