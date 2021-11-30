@@ -8,7 +8,7 @@ import random
 # # Generate true distributions of weekly hospital orders
 
 NUM_HOSPITALS = 10
-N_SAMPLES = 1000
+N_SAMPLES = 30
 random.seed(50)
 
 # https://towardsdatascience.com/exploring-normal-distribution-with-jupyter-notebook-3645ec2d83f8
@@ -28,8 +28,11 @@ for i in range(1, NUM_HOSPITALS+1):
   mu_vaccine, sigma_vaccine = i*75, random.uniform(1, 25)
 
   print(f'Hospital {i}: {mu_blood}, {sigma_blood}')
-  blood_distrs.append(np.random.normal(mu_blood, sigma_blood, N_SAMPLES))
-  vaccine_distrs.append(np.random.normal(mu_vaccine, sigma_vaccine, N_SAMPLES))
+  blood_samples = np.random.normal(mu_blood, sigma_blood, N_SAMPLES)
+  vaccine_samples = np.random.normal(mu_vaccine, sigma_vaccine, N_SAMPLES)
+
+  blood_distrs.append(np.rint(blood_samples)) # round to nearest integer
+  vaccine_distrs.append(np.rint(vaccine_samples))
 
   ax_blood.plot(blood_data, norm.pdf(blood_data, scale=sigma_blood, loc=mu_blood), label=f"Hospital #{i}")
   ax_vaccine.plot(vaccine_data, norm.pdf(vaccine_data, scale=sigma_vaccine, loc=mu_vaccine), label=f"Hospital #{i}")
@@ -40,21 +43,21 @@ ax_blood.legend(loc='best', frameon=True)
 ax_vaccine.set_title('True Distribution of Vaccine Supply Orders')
 ax_vaccine.legend(loc='best', frameon=True)
 
+# Save hospital past order data, 1 file per hospital
+for i in range(0, NUM_HOSPITALS):
+  np.savetxt(f'hospital{i+1}Data.txt', blood_distrs[i])
+
 # creates 5 chunks-worth of data
-# simply takes chunks of 200 entries from our normal distribution
-# to view files, click on the left pane and click on the "Folder" icon at the bottom
-for i in range(5):
-  np.savetxt(f'{5-i}_weeks_ago.out', blood_distrs[0][200*i:200*(i+1)])
+# for i in range(5):
+#   np.savetxt(f'{5-i}_weeks_ago.out', blood_distrs[0][200*i:200*(i+1)])
+
+# For every hospital, learn a distribution
+learned_distributions = dict()
+for i in range(0, NUM_HOSPITALS):
+  mean, std = norm.fit(blood_distrs[i][:])
+  learned_distributions[i+1] = (mean, std)
 
 
-# creates an actual file in Google Drive
-# alternate technique of saving to a file
-# with open('/content/drive/My Drive/test.txt', 'w') as f:
-#   f.write(np.array2string(blood_distrs[0][:200], separator='\n'))
-
-# built-in function that allows us to find mean given a list of numbers
-# (if we don't go with the Beta/ Dirichlet distribution)
-mean, std = norm.fit(blood_distrs[0][200:400])
 
 
 # Generate grid, hospital locations, and dataset: 
