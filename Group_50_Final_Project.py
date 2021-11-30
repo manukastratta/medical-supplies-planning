@@ -79,12 +79,12 @@ state_list = list(range(0, NUM_HOSPITALS + 1))
 print(state_list)
 for curr_state in range(0, NUM_HOSPITALS + 1): 
   next_states = [x for x in state_list if x != curr_state]
-  action = 1 #1-indexed like project 
   for next_state in next_states: 
+    action = next_state
     curr_location = np.array(index_to_hospital[curr_state])
     next_location = np.array(index_to_hospital[next_state])
     curr_reward = 1 / np.linalg.norm(curr_location - next_location) #Just based on distance for now 
     dataset.append([curr_state, action, curr_reward, next_state])
-    action += 1 
+
 print(dataset)
 
