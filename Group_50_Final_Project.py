@@ -86,8 +86,8 @@ for curr_state in range(0, NUM_HOSPITALS + 1):
     action = next_state
     curr_location = np.array(index_to_hospital[curr_state])
     next_location = np.array(index_to_hospital[next_state])
-    curr_reward = 1 / np.linalg.norm(curr_location - next_location) #Just based on distance for now 
+    curr_reward = - int(np.linalg.norm(curr_location - next_location)) #Just based on distance for now
     dataset.append([curr_state, action, curr_reward, next_state])
 
 print(dataset)
-np.savetxt("preliminary_dataset.csv", dataset, fmt = '%1d,%1d,%3f,%1d')
+np.savetxt("preliminary_dataset.csv", dataset, fmt = '%1d,%1d,%1d,%1d')
