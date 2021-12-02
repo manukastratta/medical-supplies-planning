@@ -10,8 +10,6 @@ DISCOUNT_FACTOR = .95 #.95 for small and large, 1 for medium
 
 def generate_policy(infile, outfile):
     dataset = list(csv.reader(open(infile)))
-    variables = dataset[0]
-    del dataset[0]
     dataset = np.array(dataset).astype(int)
 
     num_states = np.max(dataset[:, 3]) #Since we might have next_states that are never init_states
@@ -43,7 +41,9 @@ def generate_policy(infile, outfile):
     #For each state, output the best action
     best_action_list = []
     #print(q_matrix)
-
+    with open("q_matrix.csv", 'w') as g:
+        for curr_row in q_matrix:
+            g.write(str(curr_row) + '\n')
 
     for curr_row_index in range(num_states):
         q_matrix_row = q_matrix[curr_row_index]
