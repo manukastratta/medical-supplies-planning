@@ -14,7 +14,7 @@ def generate_policy(infile, outfile):
     del dataset[0]
     dataset = np.array(dataset).astype(int)
 
-    num_states = np.max(dataset[:, 0])
+    num_states = np.max(dataset[:, 3]) #Since we might have next_states that are never init_states
     print(num_states)
     num_actions = np.max(dataset[:, 1])
     print(num_actions)
@@ -34,7 +34,7 @@ def generate_policy(infile, outfile):
 
             possible_next_q = []
             for poss_action in range(num_actions):
-                possible_next_q.append(q_matrix[next_state - 1, poss_action])
+                possible_next_q.append(q_matrix[next_state - 1, poss_action]) #Keep same since we 1 index states
             best_next_q = np.max(possible_next_q)
 
             new_value = q_matrix[curr_state - 1][curr_action - 1] + lr * (curr_reward + (DISCOUNT_FACTOR * best_next_q) - q_matrix[curr_state - 1][curr_action - 1])
@@ -44,10 +44,13 @@ def generate_policy(infile, outfile):
     best_action_list = []
     #print(q_matrix)
 
+
     for curr_row_index in range(num_states):
         q_matrix_row = q_matrix[curr_row_index]
         best_action = np.argmax(q_matrix_row) + 1
-        best_action_list.append(best_action)
+
+        current_state = curr_row_index + 1
+        best_action_list.append((current_state, best_action))
     end_time = timeit.default_timer()
 
     with open(outfile, 'w') as f:
