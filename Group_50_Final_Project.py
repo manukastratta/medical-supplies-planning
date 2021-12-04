@@ -18,6 +18,7 @@ def powerset(s):
 NUM_HOSPITALS = 10
 N_SAMPLES = 5
 random.seed(50)
+np.random.seed(50)
 
 # https://towardsdatascience.com/exploring-normal-distribution-with-jupyter-notebook-3645ec2d83f8
 
@@ -193,7 +194,7 @@ route = []
 
 # get policy from file
 policy = dict() # of length 5121
-with open("my_test_policy.policy") as file:
+with open("improved_fixed_run.policy") as file:
     lines = file.readlines()
     for line in lines:
         line = line.rstrip()
@@ -211,7 +212,7 @@ for i in range(NUM_HOSPITALS):
   best_action = policy[curr_state_indx]
   prev_action = best_action
 
-  next_state = (best_action, tuple(history))
+  next_state = (best_action, tuple(sorted(history)))
   next_state_indx = state_to_index[next_state]
   curr_state_indx = next_state_indx
   route.append(best_action) # update route
