@@ -1,12 +1,12 @@
-POLICY_FILENAME = "policyWith100Epochs.policy"
+POLICY_FILENAME = "random_with_urgency_100ep.policy"
 NUM_HOSPITALS = 10
 
 #TODO: Make this work for our new reward function
-def total_reward_for_route(route, hospital_to_coord):
-  total_reward = 0
-  for i in range(0, len(route)-1):
-    total_reward += reward(route[i], route[i+1], hospital_to_coord)
-  return total_reward
+# def total_reward_for_route(route, hospital_to_coord):
+#   total_reward = 0
+#   for i in range(0, len(route)-1):
+#     total_reward += reward(route[i], route[i+1], hospital_to_coord)
+#   return total_reward
 
 
 # From policy, output optimal route
@@ -42,9 +42,9 @@ for i in range(NUM_HOSPITALS):
 
 print("route from q-learning: ", route)
 
-total_reward = total_reward_for_route(route, hospital_to_coord)
-print("total_reward from q-learning route: ", total_reward)
+# total_reward = total_reward_for_route(route, hospital_to_coord)
+# print("total_reward from q-learning route: ", total_reward)
 
-our_route = [0, 5, 4, 8, 9, 6, 10, 1, 2, 7, 3]
-total_reward = total_reward_for_route(our_route, hospital_to_coord)
-print("total_reward for our route: ", total_reward)
+# our_route = [0, 5, 4, 8, 9, 6, 10, 1, 2, 7, 3]
+# total_reward = total_reward_for_route(our_route, hospital_to_coord)
+# print("total_reward for our route: ", total_reward)
