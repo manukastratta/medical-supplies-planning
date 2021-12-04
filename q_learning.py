@@ -41,7 +41,7 @@ def generate_policy(infile, outfile):
     #For each state, output the best action
     best_action_list = []
     #print(q_matrix)
-    with open("q_matrix.csv", 'w') as g:
+    with open("random_with_urgency_q_matrix.csv", 'w') as g:
         for curr_row in q_matrix:
             g.write(str(curr_row) + '\n')
 

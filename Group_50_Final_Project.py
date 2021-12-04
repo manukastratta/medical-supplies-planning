@@ -14,14 +14,31 @@ def powerset(s):
 
 NUM_HOSPITALS = 10
 N_SAMPLES = 5
-POLICY_FILENAME = "policyWith100Epochs.policy"
+#POLICY_FILENAME = "policyWith100Epochs.policy"
 random.seed(50)
 np.random.seed(50)
 
-def reward(curr_state, next_state, hospital_to_coord):
+def euc_distance_reward(curr_state, next_state, hospital_to_coord):
   curr_grid_location = np.array(hospital_to_coord[curr_state])
   next_grid_location = np.array(hospital_to_coord[next_state])
   return int(25 / np.linalg.norm (curr_grid_location - next_grid_location))
+
+
+DISTANCE_WEIGHT = 1
+URGENCY_WEIGHT = 1
+URGENCY_SCALE = .15
+def dist_urgency_reward(curr_state, next_state, hospital_to_coord, hospital_to_blood_dist, hospital_to_vaccine_dist):
+  curr_grid_location = np.array(hospital_to_coord[curr_state[0]])
+  next_grid_location = np.array(hospital_to_coord[next_state[0]])
+  distance_comp = int(25 / np.linalg.norm (curr_grid_location - next_grid_location))
+
+  num_visited_nodes = len(curr_state[1]) + 1
+  blood_pred = hospital_to_blood_dist[next_state[0]][0]
+  vaccine_pred = hospital_to_vaccine_dist[next_state[0]][0]
+  urgency_comp = URGENCY_SCALE/num_visited_nodes * (blood_pred + vaccine_pred)
+
+  final_reward = DISTANCE_WEIGHT * distance_comp + URGENCY_WEIGHT * urgency_comp
+  return final_reward
 
 def total_reward_for_route(route, hospital_to_coord):
   total_reward = 0
@@ -29,9 +46,6 @@ def total_reward_for_route(route, hospital_to_coord):
     total_reward += reward(route[i], route[i+1], hospital_to_coord)
   return total_reward
 
-
-
-# https://towardsdatascience.com/exploring-normal-distribution-with-jupyter-notebook-3645ec2d83f8
 
 blood_distrs = list()
 vaccine_distrs = list()
@@ -182,57 +196,58 @@ for curr_state in state_space:
   next_states = [(x, visited) for x in not_yet_visited]
   for next_state in next_states:
     action = next_state[0]
-    curr_reward = reward(curr_location, action, hospital_to_coord)
+    curr_reward = dist_urgency_reward(curr_state, next_state, hospital_to_coord,
+                                      hospital_to_blood_dist, hospital_to_vaccine_dist)
     # print(curr_state)
     curr_state_index = state_to_index[(curr_state[0], tuple(sorted(curr_state[1])))]
     next_state_index = state_to_index[(next_state[0], tuple(sorted(next_state[1])))]
     dataset.append([curr_state_index, action, curr_reward, next_state_index])
 
 # print(dataset)
-np.savetxt("fixed_preliminary_dataset.csv", dataset, fmt = '%1d,%1d,%1d,%1d')
+np.savetxt("random_with_urgency_preliminary_dataset.csv", dataset, fmt = '%1d,%1d,%1d,%1d')
 
-w = csv.writer(open("state_to_index.csv" , "w"))
+w = csv.writer(open("random_with_urgency_state_to_index.csv" , "w"))
 for key, value in state_to_index.items():
   w.writerow([tuple(key), value])
 
-
-# From policy, output optimal route
-# Start from initial state, take best action, read next state, repeat. 
-# At each step, write down the best action
-route = [0] # start at home base
-
-# get policy from file
-policy = dict() # of length 5121
-with open(POLICY_FILENAME) as file:
-#with open("improved_fixed_run.policy") as file:
-    lines = file.readlines()
-    for line in lines:
-        line = line.rstrip()
-        state, action = line.split(",")
-        policy[int(state)] = int(action)
-
-# get optimal route
-curr_state_indx = 1
-history = set()
-prev_action = -1
-for i in range(NUM_HOSPITALS):
-  if curr_state_indx != 1: # if not in the start state
-    history.add(prev_action) # visit the next hospital
-  
-  best_action = policy[curr_state_indx]
-  prev_action = best_action
-
-  next_state = (best_action, tuple(sorted(history)))
-  next_state_indx = state_to_index[next_state]
-  curr_state_indx = next_state_indx
-  route.append(best_action) # update route
-
-print("route from q-learning: ", route)
-
-
-total_reward = total_reward_for_route(route, hospital_to_coord)
-print("total_reward from q-learning route: ", total_reward)
-
-our_route = [0, 5, 4, 8, 9, 6, 10, 1, 2, 7, 3]
-total_reward = total_reward_for_route(our_route, hospital_to_coord)
-print("total_reward for our route: ", total_reward)
+#
+# # From policy, output optimal route
+# # Start from initial state, take best action, read next state, repeat.
+# # At each step, write down the best action
+# route = [0] # start at home base
+#
+# # get policy from file
+# policy = dict() # of length 5121
+# with open(POLICY_FILENAME) as file:
+# #with open("improved_fixed_run.policy") as file:
+#     lines = file.readlines()
+#     for line in lines:
+#         line = line.rstrip()
+#         state, action = line.split(",")
+#         policy[int(state)] = int(action)
+#
+# # get optimal route
+# curr_state_indx = 1
+# history = set()
+# prev_action = -1
+# for i in range(NUM_HOSPITALS):
+#   if curr_state_indx != 1: # if not in the start state
+#     history.add(prev_action) # visit the next hospital
+#
+#   best_action = policy[curr_state_indx]
+#   prev_action = best_action
+#
+#   next_state = (best_action, tuple(sorted(history)))
+#   next_state_indx = state_to_index[next_state]
+#   curr_state_indx = next_state_indx
+#   route.append(best_action) # update route
+#
+# print("route from q-learning: ", route)
+#
+#
+# total_reward = total_reward_for_route(route, hospital_to_coord)
+# print("total_reward from q-learning route: ", total_reward)
+#
+# our_route = [0, 5, 4, 8, 9, 6, 10, 1, 2, 7, 3]
+# total_reward = total_reward_for_route(our_route, hospital_to_coord)
+# print("total_reward for our route: ", total_reward)
