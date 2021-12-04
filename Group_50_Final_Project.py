@@ -10,15 +10,26 @@ import csv
 def powerset(s):
   return chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
 
-
-
-
 # # Generate true distributions of weekly hospital orders
 
 NUM_HOSPITALS = 10
 N_SAMPLES = 5
+POLICY_FILENAME = "policyWith100Epochs.policy"
 random.seed(50)
 np.random.seed(50)
+
+def reward(curr_state, next_state, hospital_to_coord):
+  curr_grid_location = np.array(hospital_to_coord[curr_state])
+  next_grid_location = np.array(hospital_to_coord[next_state])
+  return int(25 / np.linalg.norm (curr_grid_location - next_grid_location))
+
+def total_reward_for_route(route, hospital_to_coord):
+  total_reward = 0
+  for i in range(0, len(route)-1):
+    total_reward += reward(route[i], route[i+1], hospital_to_coord)
+  return total_reward
+
+
 
 # https://towardsdatascience.com/exploring-normal-distribution-with-jupyter-notebook-3645ec2d83f8
 
@@ -84,27 +95,27 @@ print(f'hospital_to_vaccine_dist: {hospital_to_vaccine_dist}')
 # hospital_coords = random.sample(possible_points, NUM_HOSPITALS)
 # print(hospital_coords)
 #
-# index_to_hospital = {} #hospitals start at 1, 0 refers to starting location [states list]
-# index_to_hospital[0] = (0,0)
+# hospital_to_coord = {} #hospitals start at 1, 0 refers to starting location [states list]
+# hospital_to_coord[0] = (0,0)
 # for curr_index in range(1, NUM_HOSPITALS + 1):
-#   index_to_hospital[curr_index] = hospital_coords[curr_index - 1]
-# print(index_to_hospital)
+#   hospital_to_coord[curr_index] = hospital_coords[curr_index - 1]
+# print(hospital_to_coord)
 
 #Generate fixed hospital locations:
 # fixed_hospital_coords = [(x, x) for x in range(1, NUM_HOSPITALS + 1)]
-# index_to_hospital = {} #hospitals start at 1, 0 refers to starting location [states list]
-# index_to_hospital[0] = (0,0)
+# hospital_to_coord = {} #hospitals start at 1, 0 refers to starting location [states list]
+# hospital_to_coord[0] = (0,0)
 # for curr_index in range(1, NUM_HOSPITALS + 1): 
-#   index_to_hospital[curr_index] = fixed_hospital_coords[curr_index - 1]
-# print(index_to_hospital)
+#   hospital_to_coord[curr_index] = fixed_hospital_coords[curr_index - 1]
+# print(hospital_to_coord)
 
 #Old state generation code:
 # for curr_state in range(0, NUM_HOSPITALS + 1):
 #   next_states = [x for x in state_list if x != curr_state]
 #   for next_state in next_states:
 #     action = next_state
-#     curr_location = np.array(index_to_hospital[curr_state])
-#     next_location = np.array(index_to_hospital[next_state])
+#     curr_location = np.array(hospital_to_coord[curr_state])
+#     next_location = np.array(hospital_to_coord[next_state])
 #     curr_reward = int(25 / np.linalg.norm(curr_location - next_location)) #Just based on distance for now
 #     dataset.append([curr_state, action, curr_reward, next_state])
 
@@ -117,11 +128,11 @@ for x in range(0, MAX_DIM + 1):
     possible_points.append(curr_tuple)
 hospital_coords = random.sample(possible_points, NUM_HOSPITALS)
 
-index_to_hospital = {} #hospitals start at 1, 0 refers to starting location [states list]
-index_to_hospital[0] = (0,0)
+hospital_to_coord = {} #hospitals start at 1, 0 refers to starting location [states list]
+hospital_to_coord[0] = (0,0)
 for curr_index in range(1, NUM_HOSPITALS + 1): 
-  index_to_hospital[curr_index] = hospital_coords[curr_index - 1]
-print(index_to_hospital)
+  hospital_to_coord[curr_index] = hospital_coords[curr_index - 1]
+print(hospital_to_coord)
 
 #state = (curr_state, set of states visited already)
 #Generate powerset / build up state space
@@ -171,9 +182,7 @@ for curr_state in state_space:
   next_states = [(x, visited) for x in not_yet_visited]
   for next_state in next_states:
     action = next_state[0]
-    curr_grid_location = np.array(index_to_hospital[curr_location])
-    next_grid_location = np.array(index_to_hospital[action])
-    curr_reward = int(25 / np.linalg.norm (curr_grid_location - next_grid_location))
+    curr_reward = reward(curr_location, action, hospital_to_coord)
     # print(curr_state)
     curr_state_index = state_to_index[(curr_state[0], tuple(sorted(curr_state[1])))]
     next_state_index = state_to_index[(next_state[0], tuple(sorted(next_state[1])))]
@@ -190,11 +199,12 @@ for key, value in state_to_index.items():
 # From policy, output optimal route
 # Start from initial state, take best action, read next state, repeat. 
 # At each step, write down the best action
-route = []
+route = [0] # start at home base
 
 # get policy from file
 policy = dict() # of length 5121
-with open("improved_fixed_run.policy") as file:
+with open(POLICY_FILENAME) as file:
+#with open("improved_fixed_run.policy") as file:
     lines = file.readlines()
     for line in lines:
         line = line.rstrip()
@@ -217,4 +227,12 @@ for i in range(NUM_HOSPITALS):
   curr_state_indx = next_state_indx
   route.append(best_action) # update route
 
-print("route: ", route)
+print("route from q-learning: ", route)
+
+
+total_reward = total_reward_for_route(route, hospital_to_coord)
+print("total_reward from q-learning route: ", total_reward)
+
+our_route = [0, 5, 4, 8, 9, 6, 10, 1, 2, 7, 3]
+total_reward = total_reward_for_route(our_route, hospital_to_coord)
+print("total_reward for our route: ", total_reward)
