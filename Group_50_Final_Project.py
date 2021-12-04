@@ -167,3 +167,36 @@ np.savetxt("fixed_preliminary_dataset.csv", dataset, fmt = '%1d,%1d,%1d,%1d')
 w = csv.writer(open("state_to_index.csv" , "w"))
 for key, value in state_to_index.items():
   w.writerow([tuple(key), value])
+
+
+# From policy, output optimal route
+# Start from initial state, take best action, read next state, repeat. 
+# At each step, write down the best action
+route = []
+
+# get policy from file
+policy = dict() # of length 5121
+with open("my_test_policy.policy") as file:
+    lines = file.readlines()
+    for line in lines:
+        line = line.rstrip()
+        state, action = line.split(",")
+        policy[int(state)] = int(action)
+
+# get optimal route
+curr_state_indx = 1
+history = set()
+prev_action = -1
+for i in range(NUM_HOSPITALS):
+  if curr_state_indx != 1: # if not in the start state
+    history.add(prev_action) # visit the next hospital
+  
+  best_action = policy[curr_state_indx]
+  prev_action = best_action
+
+  next_state = (best_action, tuple(history))
+  next_state_indx = state_to_index[next_state]
+  curr_state_indx = next_state_indx
+  route.append(best_action) # update route
+
+print("route: ", route)

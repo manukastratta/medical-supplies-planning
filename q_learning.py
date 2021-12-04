@@ -55,7 +55,7 @@ def generate_policy(infile, outfile):
 
     with open(outfile, 'w') as f:
         for curr_value in best_action_list:
-            f.write(str(curr_value) + "\n")
+            f.write(str(str(curr_value[0]) + "," + str(curr_value[1])) + "\n")
     print("Algorithm took:")
     print(end_time - starting_time)
 
