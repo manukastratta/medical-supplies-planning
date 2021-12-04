@@ -16,7 +16,7 @@ def powerset(s):
 # # Generate true distributions of weekly hospital orders
 
 NUM_HOSPITALS = 10
-N_SAMPLES = 30
+N_SAMPLES = 5
 random.seed(50)
 
 # https://towardsdatascience.com/exploring-normal-distribution-with-jupyter-notebook-3645ec2d83f8
@@ -32,10 +32,11 @@ fig_blood, ax_blood = plt.subplots()
 fig_vaccine, ax_vaccine = plt.subplots()
 
 for i in range(1, NUM_HOSPITALS+1):
-  mu_blood, sigma_blood = i*50, random.uniform(1, 25)
-  mu_vaccine, sigma_vaccine = i*75, random.uniform(1, 25)
+  mu_blood, sigma_blood = i*50, random.uniform(3*i, 5*i)
+  mu_vaccine, sigma_vaccine = i*100, random.uniform(6*i, 10*i)
 
-  print(f'Hospital {i}: {mu_blood}, {sigma_blood}')
+  print(f'Blood -> Hospital {i}: {mu_blood}, {sigma_blood}')
+  print(f'Vaccine -> Hospital {i}: {mu_vaccine}, {sigma_vaccine}')
   blood_samples = np.random.normal(mu_blood, sigma_blood, N_SAMPLES)
   vaccine_samples = np.random.normal(mu_vaccine, sigma_vaccine, N_SAMPLES)
 
@@ -53,19 +54,21 @@ ax_vaccine.legend(loc='best', frameon=True)
 
 # Save hospital past order data, 1 file per hospital
 for i in range(0, NUM_HOSPITALS):
-  np.savetxt(f'hospitalData/hospital{i+1}Data.txt', blood_distrs[i])
-
-# creates 5 chunks-worth of data
-# for i in range(5):
-#   np.savetxt(f'{5-i}_weeks_ago.out', blood_distrs[0][200*i:200*(i+1)])
+  np.savetxt(f'blood_data/hospital{i+1}.txt', blood_distrs[i])
+  np.savetxt(f'vaccine_data/hospital{i+1}.txt', vaccine_distrs[i])
 
 # For every hospital, learn a distribution
-learned_distributions = dict()
+hospital_to_blood_dist = dict()
+hospital_to_vaccine_dist = dict()
 for i in range(0, NUM_HOSPITALS):
-  mean, std = norm.fit(blood_distrs[i][:])
-  learned_distributions[i+1] = (mean, std)
+  blood_mean, blood_std = norm.fit(blood_distrs[i][:])
+  hospital_to_blood_dist[i+1] = (blood_mean, blood_std)
 
+  vaccine_mean, vaccine_std = norm.fit(vaccine_distrs[i][:])
+  hospital_to_vaccine_dist[i+1] = (vaccine_mean, vaccine_std)
 
+print(f'hospital_to_blood_dist: {hospital_to_blood_dist}')
+print(f'hospital_to_vaccine_dist: {hospital_to_vaccine_dist}')
 
 
 # Generate grid, hospital locations, and dataset: 
@@ -86,6 +89,14 @@ for i in range(0, NUM_HOSPITALS):
 #   index_to_hospital[curr_index] = hospital_coords[curr_index - 1]
 # print(index_to_hospital)
 
+#Generate fixed hospital locations:
+# fixed_hospital_coords = [(x, x) for x in range(1, NUM_HOSPITALS + 1)]
+# index_to_hospital = {} #hospitals start at 1, 0 refers to starting location [states list]
+# index_to_hospital[0] = (0,0)
+# for curr_index in range(1, NUM_HOSPITALS + 1): 
+#   index_to_hospital[curr_index] = fixed_hospital_coords[curr_index - 1]
+# print(index_to_hospital)
+
 #Old state generation code:
 # for curr_state in range(0, NUM_HOSPITALS + 1):
 #   next_states = [x for x in state_list if x != curr_state]
@@ -96,13 +107,19 @@ for i in range(0, NUM_HOSPITALS):
 #     curr_reward = int(25 / np.linalg.norm(curr_location - next_location)) #Just based on distance for now
 #     dataset.append([curr_state, action, curr_reward, next_state])
 
+#Generate random hospital locations:
+MAX_DIM = 10
+possible_points = []
+for x in range(0, MAX_DIM + 1):
+  for y in range(0, MAX_DIM + 1):
+    curr_tuple = (x,y)
+    possible_points.append(curr_tuple)
+hospital_coords = random.sample(possible_points, NUM_HOSPITALS)
 
-#Generate fixed hospital locations:
-fixed_hospital_coords = [(x, x) for x in range(1, NUM_HOSPITALS + 1)]
 index_to_hospital = {} #hospitals start at 1, 0 refers to starting location [states list]
 index_to_hospital[0] = (0,0)
 for curr_index in range(1, NUM_HOSPITALS + 1): 
-  index_to_hospital[curr_index] = fixed_hospital_coords[curr_index - 1]
+  index_to_hospital[curr_index] = hospital_coords[curr_index - 1]
 print(index_to_hospital)
 
 #state = (curr_state, set of states visited already)
@@ -129,8 +146,8 @@ for current_set in list_of_sets:
     else:
       for curr_elem in not_yet_visited:
         state_space.append((curr_elem, current_set))
-print(state_space)
-print(len(state_space))
+# print(state_space)
+# print(len(state_space))
 
 state_to_index = {}
 counter = 1
@@ -143,7 +160,7 @@ dataset = [] #(state, action, reward, next state)
 counter = 0
 for curr_state in state_space:
   counter += 1
-  print(counter)
+  # print(counter)
   curr_location = curr_state[0]
   visited = curr_state[1].copy()
   if curr_location != 0:
@@ -156,12 +173,12 @@ for curr_state in state_space:
     curr_grid_location = np.array(index_to_hospital[curr_location])
     next_grid_location = np.array(index_to_hospital[action])
     curr_reward = int(25 / np.linalg.norm (curr_grid_location - next_grid_location))
-    print(curr_state)
+    # print(curr_state)
     curr_state_index = state_to_index[(curr_state[0], tuple(sorted(curr_state[1])))]
     next_state_index = state_to_index[(next_state[0], tuple(sorted(next_state[1])))]
     dataset.append([curr_state_index, action, curr_reward, next_state_index])
 
-print(dataset)
+# print(dataset)
 np.savetxt("fixed_preliminary_dataset.csv", dataset, fmt = '%1d,%1d,%1d,%1d')
 
 w = csv.writer(open("state_to_index.csv" , "w"))
