@@ -1,10 +1,14 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.stats import norm
 import random
 from itertools import chain, combinations
 import csv
 import timeit
+
+# for plotting
+import matplotlib.pyplot as plt
+from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
+import matplotlib.image as mpimg
 
 class Final_Project:
     def __init__(self):
@@ -37,6 +41,9 @@ class Final_Project:
 
         # Generated policy file from q_learning()
         self.out_file = "random_with_urgency_100ep.policy" # AKA the policy file
+
+        # Final route
+        self.final_route = None
         
         # Set random seeds for math and numpy functions for deterministic results
         random.seed(50)
@@ -302,6 +309,7 @@ class Final_Project:
             route.append(best_action)  # update route
 
         print("route from q-learning: ", route)
+        self.final_route = route
 
         total_reward = total_reward_for_route(route)
         print("total_reward from q-learning route: ", total_reward)
@@ -310,7 +318,50 @@ class Final_Project:
         total_reward = total_reward_for_route(our_route)
         print("total_reward for our route: ", total_reward)
 
+    def visualize_route(self):
+        x = np.array([self.hospital_to_coord[self.final_route[i]][0] for i in range(len(self.final_route))])
+        y = np.array([self.hospital_to_coord[self.final_route[i]][1] for i in range(len(self.final_route))])
+
+        plt.clf()
+        fig, ax = plt.subplots()
+        plt.xlim([-1, 11])
+        plt.ylim([-1, 11])
+        plt.title("Drone Route Planning")
+        plt.grid()
+
+        arr_done = mpimg.imread('drone.png')
+        imagebox = OffsetImage(arr_done, zoom=0.2)
+        
+        for i in range(0, len(self.final_route)):
+            hospital_num = self.final_route[i]
+            h_x, h_y = self.hospital_to_coord[hospital_num][0], self.hospital_to_coord[hospital_num][1] 
+            plt.scatter(h_x, h_y, color='blue')
+            if i != 0:
+                plt.text(h_x+.1, h_y+.1, str(hospital_num), fontsize=9)
+            else: # if plotting home base
+                plt.text(h_x+.1, h_y+.1, "Home Base", fontsize=9)
+        
+        # show drone image at home base
+        ab = AnnotationBbox(imagebox, (x[0], y[0]), frameon=0)
+        ax.add_artist(ab)
+        plt.pause(1)
+        ab.remove()
+        
+        # add line segments for each pair of points, show drone at each step
+        for i in range(0, len(self.final_route)-1):
+            plt.plot(x[i:i+2], y[i:i+2], color='skyblue')
+            ab = AnnotationBbox(imagebox, (x[i+1], y[i+1]), frameon=0)
+            ax.add_artist(ab)
+            plt.pause(1)
+            ab.remove()
+            #   plt.savefig(f"{i}.png")
+        
+        plt.savefig("latestDroneRoute.png")
+        plt.grid()
+        plt.show()
+
 final_project = Final_Project()
 final_project.generate_dataset()
 final_project.q_learning()
 final_project.generate_route()
+final_project.visualize_route()
