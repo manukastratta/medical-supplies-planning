@@ -35,6 +35,10 @@ class Final_Project:
         # Note: hospitals start at 1, 0 refers to starting location [states list]
         self.hospital_to_coord = dict() 
 
+        # Stores our true distributions for blood and vaccines
+        self.true_hospital_to_blood_dist = dict()
+        self.true_hospital_to_vaccine_dist = dict()
+
         # Stores our learned distributions for blood and vaccines
         self.hospital_to_blood_dist = dict()
         self.hospital_to_vaccine_dist = dict()
@@ -135,6 +139,9 @@ class Final_Project:
         for i in range(1, self.NUM_HOSPITALS+1):
             mu_blood, sigma_blood = i*50, random.uniform(3*i, 5*i)
             mu_vaccine, sigma_vaccine = i*100, random.uniform(6*i, 10*i)
+
+            self.true_hospital_to_blood_dist[i] = (mu_blood, sigma_blood)
+            self.true_hospital_to_vaccine_dist[i] = (mu_vaccine, sigma_vaccine)
 
             print(f'Blood -> Hospital {i}: {mu_blood}, {sigma_blood}')
             print(f'Vaccine -> Hospital {i}: {mu_vaccine}, {sigma_vaccine}')
