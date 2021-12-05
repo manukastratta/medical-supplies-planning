@@ -196,7 +196,7 @@ class Final_Project:
         hospital_coords = random.sample(possible_points, self.NUM_HOSPITALS)
 
         self.hospital_to_coord[0] = (0,0)
-        for curr_index in range(1, self.NUM_HOSPITALS + 1): 
+        for curr_index in range(1, self.NUM_HOSPITALS + 1):
             self.hospital_to_coord[curr_index] = hospital_coords[curr_index - 1]
         print(self.hospital_to_coord)
 
