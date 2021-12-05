@@ -184,8 +184,10 @@ class Final_Project:
         print(f'hospital_to_blood_dist: {self.hospital_to_blood_dist}')
         print(f'hospital_to_vaccine_dist: {self.hospital_to_vaccine_dist}')
 
+        #Generate fixed hospital locations: (two clusters the same distance apart)
+        #self.hospital_to_coord = {0: (0,0), 1: (0, 10), 2: (0, 9), 3: (0, 8), 4: (1, 10), 5: (1, 9), 6: (9, 1), 7: (10, 1), 8: (8, 0), 9: (9, 0), 10: (10,0)}
+
         # Generate random hospital locations:
-        
         possible_points = []
         for x in range(0, self.MAX_DIM + 1):
             for y in range(0, self.MAX_DIM + 1):
