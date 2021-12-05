@@ -19,8 +19,8 @@ class Final_Project:
         # For Q-learning
         self.NUM_EPOCHS = 100
         self.N_SAMPLES = 5
-        self.lr = .1
-        self.DISCOUNT_FACTOR = .95 #.95 for small and large, 1 for medium
+        self.lr = .5
+        self.DISCOUNT_FACTOR = .9
 
         # Parameters for the reward function
         self.DISTANCE_WEIGHT = 0.5
