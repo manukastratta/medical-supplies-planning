@@ -22,12 +22,16 @@ class Final_Project:
         self.lr = .1
         self.DISCOUNT_FACTOR = .95 #.95 for small and large, 1 for medium
 
-        # For the reward function
+        # Parameters for the reward function
         self.DISTANCE_WEIGHT = 0.5
-        self.DISTANCE_SCALE = 25
-        self.URGENCY_WEIGHT = 0.5
-        self.URGENCY_SCALE = .15
-    
+        self.DISTANCE_SLOPE = -10
+        self.DISTANCE_SCALE = 75
+        self.URGENCY_WEIGHT = 1 - self.DISTANCE_WEIGHT
+        self.URGENCY_SCALE = .075
+
+        #Reward Function
+        self.reward_func = self.reward_linear_distance
+
         # Stores a mapping from every state to an index (integer)
         self.state_to_index = dict()
 
@@ -43,7 +47,7 @@ class Final_Project:
         self.hospital_to_blood_dist = dict()
         self.hospital_to_vaccine_dist = dict()
 
-        FOLDER_NAME_PREFIX = f"epochs:{self.NUM_EPOCHS}_lr:{self.lr}_discount:{self.DISCOUNT_FACTOR}_distanceWeight:{self.DISTANCE_WEIGHT}_distanceScale:{self.DISTANCE_SCALE}_urgencyWeight:{self.URGENCY_WEIGHT}_urgencyScale:{self.URGENCY_SCALE}"
+        FOLDER_NAME_PREFIX = f"linear_reward_epochs:{self.NUM_EPOCHS}_lr:{self.lr}_discount:{self.DISCOUNT_FACTOR}_distanceWeight:{self.DISTANCE_WEIGHT}_distanceSlope:{self.DISTANCE_SLOPE}_distanceScale:{self.DISTANCE_SCALE}_urgencyWeight:{self.URGENCY_WEIGHT}_urgencyScale:{self.URGENCY_SCALE}"
 
         if not os.path.exists(FOLDER_NAME_PREFIX):
             os.makedirs(FOLDER_NAME_PREFIX)
@@ -97,10 +101,37 @@ class Final_Project:
     ###################################################################################
     ############################### REWARD FUNCTION####################################
     ###################################################################################
-    def reward(self, curr_state, next_state):
+    def reward_linear_distance(self, curr_state, next_state):
         curr_grid_location = np.array(self.hospital_to_coord[curr_state[0]])
         next_grid_location = np.array(self.hospital_to_coord[next_state[0]])
-        distance_comp = int(self.DISTANCE_SCALE / np.linalg.norm (curr_grid_location - next_grid_location))
+        distance_comp = int(self.DISTANCE_SLOPE * (np.linalg.norm(curr_grid_location - next_grid_location)) + self.DISTANCE_SCALE)
+        distance_comp = max(distance_comp, 1) #Modified ReLU to keep distance_comp from going negative
+
+        num_visited_nodes = len(curr_state[1]) + 1
+        blood_pred = self.hospital_to_blood_dist[next_state[0]][0]
+        vaccine_pred = self.hospital_to_vaccine_dist[next_state[0]][0]
+        urgency_comp = (self.URGENCY_SCALE/num_visited_nodes) * (blood_pred + vaccine_pred)
+
+        final_reward = int(self.DISTANCE_WEIGHT * distance_comp + self.URGENCY_WEIGHT * urgency_comp)
+        return final_reward
+
+    def reward_negative_distance(self, curr_state, next_state):
+        curr_grid_location = np.array(self.hospital_to_coord[curr_state[0]])
+        next_grid_location = np.array(self.hospital_to_coord[next_state[0]])
+        distance_comp = int(-1 * np.linalg.norm(curr_grid_location - next_grid_location))
+
+        num_visited_nodes = len(curr_state[1]) + 1
+        blood_pred = self.hospital_to_blood_dist[next_state[0]][0]
+        vaccine_pred = self.hospital_to_vaccine_dist[next_state[0]][0]
+        urgency_comp = (self.URGENCY_SCALE/num_visited_nodes) * (blood_pred + vaccine_pred)
+
+        final_reward = self.DISTANCE_WEIGHT * distance_comp + self.URGENCY_WEIGHT * urgency_comp
+        return final_reward
+
+    def reward_inverse_distance(self, curr_state, next_state):
+        curr_grid_location = np.array(self.hospital_to_coord[curr_state[0]])
+        next_grid_location = np.array(self.hospital_to_coord[next_state[0]])
+        distance_comp = int(self.DISTANCE_SCALE / np.linalg.norm(curr_grid_location - next_grid_location))
 
         num_visited_nodes = len(curr_state[1]) + 1
         blood_pred = self.hospital_to_blood_dist[next_state[0]][0]
@@ -152,7 +183,7 @@ class Final_Project:
             vaccine_distrs.append(np.rint(vaccine_samples))
 
             ax_blood.plot(blood_data, norm.pdf(blood_data, scale=sigma_blood, loc=mu_blood), label=f"Hospital #{i}")
-            ax_vaccine.plot(vaccine_data, norm.pdf(vaccine_data, scale=sigma_vaccine, loc=mu_vaccine), label=f"Hospital #{i}")
+            #ax_vaccine.plot(vaccine_data, norm.pdf(vaccine_data, scale=sigma_vaccine, loc=mu_vaccine), label=f"Hospital #{i}")
 
         ax_blood.set_title('True Distribution of Blood Supply Orders')
         ax_blood.legend(loc='best', frameon=True)
@@ -247,7 +278,7 @@ class Final_Project:
             next_states = [(x, visited) for x in not_yet_visited]
             for next_state in next_states:
                 action = next_state[0]
-                curr_reward = self.reward(curr_state, next_state)
+                curr_reward = self.reward_func(curr_state, next_state)
 
                 curr_state_index = self.state_to_index[(curr_state[0], tuple(sorted(curr_state[1])))]
                 next_state_index = self.state_to_index[(next_state[0], tuple(sorted(next_state[1])))]
@@ -298,12 +329,16 @@ class Final_Project:
             best_action_list = []
             #print(q_matrix)
             with open(self.FILE_NAME_Q_MATRIX, 'w') as g:
+                counter = 1
                 for curr_row in q_matrix:
+                    g.write("Current line is for state " + str(counter) + '\n')
                     g.write(str(curr_row) + '\n')
+                    counter += 1
 
             for curr_row_index in range(num_states):
                 q_matrix_row = q_matrix[curr_row_index]
-                best_action = np.argmax(q_matrix_row) + 1
+                best_action = np.argmax(np.where(q_matrix_row != 0, q_matrix_row, float("-inf"))) + 1
+                #best_action = np.argmax(q_matrix_row) + 1
 
                 current_state = curr_row_index + 1
                 best_action_list.append((current_state, best_action))
@@ -329,7 +364,7 @@ class Final_Project:
             visited_p = visited.copy()
             if route[i] != 0: 
                 visited_p.add(route[i])
-            total_reward += self.reward((route[i], sorted(visited)), (route[i+1], sorted(visited_p)))
+            total_reward += self.reward_func((route[i], sorted(visited)), (route[i+1], sorted(visited_p)))
             if route[i] != 0: 
                 visited.add(route[i])
 
