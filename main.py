@@ -5,10 +5,12 @@ import random
 from itertools import chain, combinations
 import csv
 import timeit
+import os
 
 class Final_Project:
     def __init__(self):
         self.NUM_HOSPITALS = 10
+        self.MAX_DIM = 10
 
         # For Q-learning
         self.NUM_EPOCHS = 100
@@ -17,8 +19,9 @@ class Final_Project:
         self.DISCOUNT_FACTOR = .95 #.95 for small and large, 1 for medium
 
         # For the reward function
-        self.DISTANCE_WEIGHT = 1
-        self.URGENCY_WEIGHT = 1
+        self.DISTANCE_WEIGHT = 0.5
+        self.DISTANCE_SCALE = 25
+        self.URGENCY_WEIGHT = 0.5
         self.URGENCY_SCALE = .15
     
         # Stores a mapping from every state to an index (integer)
@@ -32,12 +35,44 @@ class Final_Project:
         self.hospital_to_blood_dist = dict()
         self.hospital_to_vaccine_dist = dict()
 
-        # Generated dataset file from generate_dataset()
-        self.in_file = "random_with_urgency_preliminary_dataset.csv"
+        FOLDER_NAME_PREFIX = f"epochs:{self.NUM_EPOCHS}_lr:{self.lr}_discount:{self.DISCOUNT_FACTOR}_distanceWeight:{self.DISTANCE_WEIGHT}_distanceScale:{self.DISTANCE_SCALE}_urgencyWeight:{self.URGENCY_WEIGHT}_urgencyScale:{self.URGENCY_SCALE}"
 
-        # Generated policy file from q_learning()
-        self.out_file = "random_with_urgency_100ep.policy" # AKA the policy file
-        
+        if not os.path.exists(FOLDER_NAME_PREFIX):
+            os.makedirs(FOLDER_NAME_PREFIX)
+
+        # Generated dataset file name from generate_dataset()
+        self.FILE_NAME_DATASET = f"{FOLDER_NAME_PREFIX}/dataset.csv"
+
+        # Generated policy file name from q_learning()
+        self.FILE_NAME_POLICY = f"{FOLDER_NAME_PREFIX}/policy.policy" # AKA the policy file
+
+        # Generated Q matrix from q_learning()
+        self.FILE_NAME_Q_MATRIX = f"{FOLDER_NAME_PREFIX}/q_matrix.csv"
+
+        # Generated state to index dictionary from generate_dataset()
+        self.FILE_NAME_STATE_TO_INDEX = f"{FOLDER_NAME_PREFIX}/state_to_index.csv"
+
+        # Generated true distributions for blood from generate_dataset()
+        self.FILE_NAME_TRUE_HOSPITAL_TO_BLOOD_DIST = f"{FOLDER_NAME_PREFIX}/true_blood_data"
+
+        if not os.path.exists(self.FILE_NAME_TRUE_HOSPITAL_TO_BLOOD_DIST):
+            os.makedirs(self.FILE_NAME_TRUE_HOSPITAL_TO_BLOOD_DIST)
+
+        # Generated true distributions for vaccine from generate_dataset()
+        self.FILE_NAME_TRUE_HOSPITAL_TO_VACCINE_DIST = f"{FOLDER_NAME_PREFIX}/true_vaccine_data"
+
+        if not os.path.exists(self.FILE_NAME_TRUE_HOSPITAL_TO_VACCINE_DIST):
+            os.makedirs(self.FILE_NAME_TRUE_HOSPITAL_TO_VACCINE_DIST)
+
+        # Generated learned distributions for blood from generate_dataset()
+        self.FILE_NAME_HOSPITAL_TO_BLOOD_DIST = f"{FOLDER_NAME_PREFIX}/learned_hospital_to_blood_dist.csv"
+
+        # Generated learned distributions for vaccine from generate_dataset()
+        self.FILE_NAME_HOSPITAL_TO_VACCINE_DIST = f"{FOLDER_NAME_PREFIX}/learned_hospital_to_vaccine_dist.csv"
+
+        # Generated route from Q-learning
+        self.FILE_NAME_ROUTE_AND_REWARD = f'{FOLDER_NAME_PREFIX}/route_and_reward.txt'
+
         # Set random seeds for math and numpy functions for deterministic results
         random.seed(50)
         np.random.seed(50)
@@ -48,12 +83,12 @@ class Final_Project:
     def reward(self, curr_state, next_state):
         curr_grid_location = np.array(self.hospital_to_coord[curr_state[0]])
         next_grid_location = np.array(self.hospital_to_coord[next_state[0]])
-        distance_comp = int(25 / np.linalg.norm (curr_grid_location - next_grid_location))
+        distance_comp = int(self.DISTANCE_SCALE / np.linalg.norm (curr_grid_location - next_grid_location))
 
         num_visited_nodes = len(curr_state[1]) + 1
         blood_pred = self.hospital_to_blood_dist[next_state[0]][0]
         vaccine_pred = self.hospital_to_vaccine_dist[next_state[0]][0]
-        urgency_comp = self.URGENCY_SCALE/num_visited_nodes * (blood_pred + vaccine_pred)
+        urgency_comp = (self.URGENCY_SCALE/num_visited_nodes) * (blood_pred + vaccine_pred)
 
         final_reward = self.DISTANCE_WEIGHT * distance_comp + self.URGENCY_WEIGHT * urgency_comp
         return final_reward
@@ -79,7 +114,7 @@ class Final_Project:
 
         # denotes the x-axis range
         blood_data = np.arange(0, 600, 0.01)
-        vaccine_data = np.arange(0, 900, 0.01)
+        vaccine_data = np.arange(0, 1200, 0.01)
 
         fig_blood, ax_blood = plt.subplots()
         fig_vaccine, ax_vaccine = plt.subplots()
@@ -107,8 +142,8 @@ class Final_Project:
 
         # Save hospital past order data, 1 file per hospital
         for i in range(0, self.NUM_HOSPITALS):
-            np.savetxt(f'blood_data/hospital{i+1}.txt', blood_distrs[i])
-            np.savetxt(f'vaccine_data/hospital{i+1}.txt', vaccine_distrs[i])
+            np.savetxt(f'{self.FILE_NAME_TRUE_HOSPITAL_TO_BLOOD_DIST}/hospital{i+1}.txt', blood_distrs[i])
+            np.savetxt(f'{self.FILE_NAME_TRUE_HOSPITAL_TO_VACCINE_DIST}/hospital{i+1}.txt', vaccine_distrs[i])
 
         # For every hospital, learn a distribution
         for i in range(0, self.NUM_HOSPITALS):
@@ -118,14 +153,22 @@ class Final_Project:
             vaccine_mean, vaccine_std = norm.fit(vaccine_distrs[i][:])
             self.hospital_to_vaccine_dist[i+1] = (vaccine_mean, vaccine_std)
 
+        w = csv.writer(open(self.FILE_NAME_HOSPITAL_TO_BLOOD_DIST , "w"))
+        for key, value in self.hospital_to_blood_dist.items():
+            w.writerow([key, value])
+
+        w = csv.writer(open(self.FILE_NAME_HOSPITAL_TO_VACCINE_DIST , "w"))
+        for key, value in self.hospital_to_vaccine_dist.items():
+            w.writerow([key, value])
+
         print(f'hospital_to_blood_dist: {self.hospital_to_blood_dist}')
         print(f'hospital_to_vaccine_dist: {self.hospital_to_vaccine_dist}')
 
         # Generate random hospital locations:
-        MAX_DIM = 10
+        
         possible_points = []
-        for x in range(0, MAX_DIM + 1):
-            for y in range(0, MAX_DIM + 1):
+        for x in range(0, self.MAX_DIM + 1):
+            for y in range(0, self.MAX_DIM + 1):
                 curr_tuple = (x,y)
                 possible_points.append(curr_tuple)
         hospital_coords = random.sample(possible_points, self.NUM_HOSPITALS)
@@ -189,9 +232,9 @@ class Final_Project:
                 dataset.append([curr_state_index, action, curr_reward, next_state_index])
 
         # print(dataset)
-        np.savetxt("random_with_urgency_preliminary_dataset.csv", dataset, fmt = '%1d,%1d,%1d,%1d')
+        np.savetxt(self.FILE_NAME_DATASET, dataset, fmt = '%1d,%1d,%1d,%1d')
 
-        w = csv.writer(open("random_with_urgency_state_to_index.csv" , "w"))
+        w = csv.writer(open(self.FILE_NAME_STATE_TO_INDEX , "w"))
         for key, value in self.state_to_index.items():
             w.writerow([tuple(key), value])
 
@@ -232,7 +275,7 @@ class Final_Project:
             #For each state, output the best action
             best_action_list = []
             #print(q_matrix)
-            with open("random_with_urgency_q_matrix.csv", 'w') as g:
+            with open(self.FILE_NAME_Q_MATRIX, 'w') as g:
                 for curr_row in q_matrix:
                     g.write(str(curr_row) + '\n')
 
@@ -244,19 +287,19 @@ class Final_Project:
                 best_action_list.append((current_state, best_action))
             end_time = timeit.default_timer()
 
-            with open(outfile, 'w') as f:
+            with open(self.FILE_NAME_POLICY, 'w') as f:
                 for curr_value in best_action_list:
                     f.write(str(str(curr_value[0]) + "," + str(curr_value[1])) + "\n")
             print("Algorithm took:")
             print(end_time - starting_time)
 
-        generate_policy(self.in_file, self.out_file)
+        generate_policy(self.FILE_NAME_DATASET, self.FILE_NAME_POLICY)
 
     ###################################################################################
     ############################### GENERATE ROUTE ####################################
     ###################################################################################
     def generate_route(self):
-        #TODO: Make this work for our new reward function
+        #TODO: Make a version only for euclidean distance
         def total_reward_for_route(route):
           total_reward = 0
           visited = set()
@@ -277,8 +320,7 @@ class Final_Project:
 
         # get policy from file
         policy = dict()  #  of length 5121
-        with open(self.out_file) as file:
-            # with open("improved_fixed_run.policy") as file:
+        with open(self.FILE_NAME_POLICY) as file:
             lines = file.readlines()
             for line in lines:
                 line = line.rstrip()
@@ -306,9 +348,20 @@ class Final_Project:
         total_reward = total_reward_for_route(route)
         print("total_reward from q-learning route: ", total_reward)
 
-        our_route = [0, 5, 4, 8, 9, 6, 10, 1, 2, 7, 3]
-        total_reward = total_reward_for_route(our_route)
-        print("total_reward for our route: ", total_reward)
+        w = open(self.FILE_NAME_ROUTE_AND_REWARD , "w")
+        for index, hospital in enumerate(route):
+            if index != len(route)-1:
+                w.write(str(hospital)+',')
+            else:
+                w.write(str(hospital)+'\n')
+
+        w.write(str(total_reward))
+        w.close()
+
+        # Test what we think is the most "optimal" route based on looking at the points
+        # our_route = [0, 5, 4, 8, 9, 6, 10, 1, 2, 7, 3]
+        # total_reward = total_reward_for_route(our_route)
+        # print("total_reward for our route: ", total_reward)
 
 final_project = Final_Project()
 final_project.generate_dataset()
