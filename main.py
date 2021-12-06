@@ -20,7 +20,7 @@ class Final_Project:
         self.NUM_EPOCHS = 100
         self.N_SAMPLES = 5
         self.lr = .5
-        self.DISCOUNT_FACTOR = .95
+        self.DISCOUNT_FACTOR = 1
 
         # Parameters for the reward function
         self.DISTANCE_WEIGHT = 0.5
@@ -47,7 +47,7 @@ class Final_Project:
         self.hospital_to_blood_dist = dict()
         self.hospital_to_vaccine_dist = dict()
 
-        FOLDER_NAME_PREFIX = f"fixed_linear_reward_epochs:{self.NUM_EPOCHS}_lr:{self.lr}_discount:{self.DISCOUNT_FACTOR}_distanceWeight:{self.DISTANCE_WEIGHT}_distanceSlope:{self.DISTANCE_SLOPE}_distanceScale:{self.DISTANCE_SCALE}_urgencyWeight:{self.URGENCY_WEIGHT}_urgencyScale:{self.URGENCY_SCALE}"
+        FOLDER_NAME_PREFIX = f"true_dist_linear_reward_epochs:{self.NUM_EPOCHS}_lr:{self.lr}_discount:{self.DISCOUNT_FACTOR}_distanceWeight:{self.DISTANCE_WEIGHT}_distanceSlope:{self.DISTANCE_SLOPE}_distanceScale:{self.DISTANCE_SCALE}_urgencyWeight:{self.URGENCY_WEIGHT}_urgencyScale:{self.URGENCY_SCALE}"
 
         if not os.path.exists(FOLDER_NAME_PREFIX):
             os.makedirs(FOLDER_NAME_PREFIX)
@@ -108,8 +108,8 @@ class Final_Project:
         distance_comp = max(distance_comp, 1) #Modified ReLU to keep distance_comp from going negative
 
         num_visited_nodes = len(curr_state[1]) + 1
-        blood_pred = self.hospital_to_blood_dist[next_state[0]][0]
-        vaccine_pred = self.hospital_to_vaccine_dist[next_state[0]][0]
+        blood_pred = self.true_hospital_to_blood_dist[next_state[0]][0]
+        vaccine_pred = self.true_hospital_to_vaccine_dist[next_state[0]][0]
         urgency_comp = (self.URGENCY_SCALE/num_visited_nodes) * (blood_pred + vaccine_pred)
 
         final_reward = int(self.DISTANCE_WEIGHT * distance_comp + self.URGENCY_WEIGHT * urgency_comp)
@@ -216,20 +216,20 @@ class Final_Project:
         print(f'hospital_to_vaccine_dist: {self.hospital_to_vaccine_dist}')
 
         #Generate fixed hospital locations: (two clusters the same distance apart)
-        self.hospital_to_coord = {0: (0,0), 1: (0, 10), 2: (0, 9), 3: (0, 8), 4: (1, 10), 5: (1, 9), 6: (9, 1), 7: (10, 1), 8: (8, 0), 9: (9, 0), 10: (10,0)}
+        #self.hospital_to_coord = {0: (0,0), 1: (0, 10), 2: (0, 9), 3: (0, 8), 4: (1, 10), 5: (1, 9), 6: (9, 1), 7: (10, 1), 8: (8, 0), 9: (9, 0), 10: (10,0)}
 
         # Generate random hospital locations:
-        # possible_points = []
-        # for x in range(0, self.MAX_DIM + 1):
-        #     for y in range(0, self.MAX_DIM + 1):
-        #         curr_tuple = (x,y)
-        #         possible_points.append(curr_tuple)
-        # hospital_coords = random.sample(possible_points, self.NUM_HOSPITALS)
-        #
-        # self.hospital_to_coord[0] = (0,0)
-        # for curr_index in range(1, self.NUM_HOSPITALS + 1):
-        #     self.hospital_to_coord[curr_index] = hospital_coords[curr_index - 1]
-        # print(self.hospital_to_coord)
+        possible_points = []
+        for x in range(0, self.MAX_DIM + 1):
+            for y in range(0, self.MAX_DIM + 1):
+                curr_tuple = (x,y)
+                possible_points.append(curr_tuple)
+        hospital_coords = random.sample(possible_points, self.NUM_HOSPITALS)
+
+        self.hospital_to_coord[0] = (0,0)
+        for curr_index in range(1, self.NUM_HOSPITALS + 1):
+            self.hospital_to_coord[curr_index] = hospital_coords[curr_index - 1]
+        print(self.hospital_to_coord)
 
         # state = (curr_state, set of states visited already)
         # Generate powerset / build up state space
