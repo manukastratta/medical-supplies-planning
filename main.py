@@ -20,7 +20,7 @@ class Final_Project:
         self.NUM_EPOCHS = 100
         self.N_SAMPLES = 5
         self.lr = .5
-        self.DISCOUNT_FACTOR = .9
+        self.DISCOUNT_FACTOR = 1
 
         # Parameters for the reward function
         self.DISTANCE_WEIGHT = 0.5
@@ -47,7 +47,7 @@ class Final_Project:
         self.hospital_to_blood_dist = dict()
         self.hospital_to_vaccine_dist = dict()
 
-        FOLDER_NAME_PREFIX = f"linear_reward_epochs:{self.NUM_EPOCHS}_lr:{self.lr}_discount:{self.DISCOUNT_FACTOR}_distanceWeight:{self.DISTANCE_WEIGHT}_distanceSlope:{self.DISTANCE_SLOPE}_distanceScale:{self.DISTANCE_SCALE}_urgencyWeight:{self.URGENCY_WEIGHT}_urgencyScale:{self.URGENCY_SCALE}"
+        FOLDER_NAME_PREFIX = f"true_dist_linear_reward_epochs:{self.NUM_EPOCHS}_lr:{self.lr}_discount:{self.DISCOUNT_FACTOR}_distanceWeight:{self.DISTANCE_WEIGHT}_distanceSlope:{self.DISTANCE_SLOPE}_distanceScale:{self.DISTANCE_SCALE}_urgencyWeight:{self.URGENCY_WEIGHT}_urgencyScale:{self.URGENCY_SCALE}"
 
         if not os.path.exists(FOLDER_NAME_PREFIX):
             os.makedirs(FOLDER_NAME_PREFIX)
@@ -108,8 +108,8 @@ class Final_Project:
         distance_comp = max(distance_comp, 1) #Modified ReLU to keep distance_comp from going negative
 
         num_visited_nodes = len(curr_state[1]) + 1
-        blood_pred = self.hospital_to_blood_dist[next_state[0]][0]
-        vaccine_pred = self.hospital_to_vaccine_dist[next_state[0]][0]
+        blood_pred = self.true_hospital_to_blood_dist[next_state[0]][0]
+        vaccine_pred = self.true_hospital_to_vaccine_dist[next_state[0]][0]
         urgency_comp = (self.URGENCY_SCALE/num_visited_nodes) * (blood_pred + vaccine_pred)
 
         final_reward = int(self.DISTANCE_WEIGHT * distance_comp + self.URGENCY_WEIGHT * urgency_comp)
