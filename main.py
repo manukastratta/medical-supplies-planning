@@ -165,7 +165,7 @@ class Final_Project:
         vaccine_data = np.arange(0, 1200, 0.01)
 
         fig_blood, ax_blood = plt.subplots()
-        fig_vaccine, ax_vaccine = plt.subplots()
+        #fig_vaccine, ax_vaccine = plt.subplots()
 
         for i in range(1, self.NUM_HOSPITALS+1):
             mu_blood, sigma_blood = i*50, random.uniform(3*i, 5*i)
@@ -188,8 +188,10 @@ class Final_Project:
         ax_blood.set_title('True Distribution of Blood Supply Orders')
         ax_blood.legend(loc='best', frameon=True)
 
-        ax_vaccine.set_title('True Distribution of Vaccine Supply Orders')
-        ax_vaccine.legend(loc='best', frameon=True)
+        #ax_vaccine.set_title('True Distribution of Vaccine Supply Orders')
+        #ax_vaccine.legend(loc='best', frameon=True)
+
+        plt.show()
 
         # Save hospital past order data, 1 file per hospital
         for i in range(0, self.NUM_HOSPITALS):
